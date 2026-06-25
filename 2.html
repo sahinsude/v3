@@ -1,1 +1,1006 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sude & Şahin - Premium Tatil Dünyamız ✈️💕</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Nunito:wght@700;800&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; font-family: 'Poppins', sans-serif; outline: none; }
+        
+        body { 
+            background: linear-gradient(135deg, #ffe2e2 0%, #ffb6c1 100%);
+            color: #2d3436; height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;
+        }
+
+        #heart-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: hidden; }
+        
+        /* GİRİŞ EKRANI */
+        #authScreen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255,226,226,0.95); backdrop-filter: blur(15px); z-index: 999999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .auth-box { background: white; padding: 40px; border-radius: 35px; box-shadow: 0 20px 50px rgba(255,105,180,0.3); border: 4px solid #ffb6c1; text-align: center; max-width: 400px; width: 90%; }
+        .auth-input { width: 100%; padding: 15px; border-radius: 15px; border: 2px solid #ffb6c1; font-size: 1.2rem; font-weight: bold; text-align: center; margin-bottom: 20px; outline: none; transition: 0.3s; }
+        .auth-input:focus { border-color: #ff4757; }
+        .auth-btn { background: linear-gradient(45deg, #ff4757, #ff6b81); color: white; border: none; padding: 15px 30px; border-radius: 20px; font-weight: 900; font-size: 1.2rem; cursor: pointer; width: 100%; box-shadow: 0 10px 20px rgba(255,71,87,0.3); transition: 0.3s; }
+        .auth-btn:hover { transform: scale(1.05); }
+
+        .screen { display: flex; height: 100vh; width: 100vw; padding: 20px; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; z-index: 10;}
+
+        /* ANA YAPI */
+        .main-card { 
+            width: 100%; max-width: 1600px; margin: auto; height: 95vh;
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            padding: 25px; border-radius: 40px; box-shadow: 0 30px 70px rgba(255,105,180,0.2); 
+            border: 2px solid rgba(255, 255, 255, 0.9); display: flex; flex-direction: column; position: relative;
+        }
+
+        /* ÜST PANEL DENGELEMESİ */
+        .top-dashboard-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 20px; }
+        
+        /* SOL ÜST DEV BÜTÇE WIDGETI */
+        .remaining-budget-widget { background: linear-gradient(135deg, #2ed573, #1dd1a1); color: white; padding: 12px 25px; border-radius: 22px; box-shadow: 0 10px 20px rgba(46,213,115,0.3); min-width: 260px; text-align: left; border: 2px solid rgba(255,255,255,0.4); transition: 0.3s; }
+        .remaining-budget-widget.danger-budget { background: linear-gradient(135deg, #ff4757, #ff6b81); box-shadow: 0 10px 20px rgba(255,71,87,0.3); }
+        .budget-large-title { font-size: 1.6rem; font-weight: 800; font-family: 'Nunito', sans-serif; line-height: 1.2; }
+        
+        .header-title { text-align: center; font-size: clamp(1.2rem, 2vw, 1.8rem); color: #ff4757; font-weight: 800; font-family: 'Nunito', sans-serif; flex: 1; }
+        .user-badge { background: #ffe2e2; padding: 10px 20px; border-radius: 20px; font-weight: 800; color: #ff4757; border: 2px dashed #ffb6c1; min-width: 150px; text-align: center; }
+
+        .dashboard-layout { display: flex; flex-direction: row; width: 100%; flex: 1; gap: 25px; overflow: hidden; }
+        .main-content-area { flex: 1; overflow-y: auto; padding-right: 10px; height: 100%; }
+        
+        /* SAĞ MENÜ */
+        .right-navigation-bar { width: 280px; display: flex; flex-direction: column; gap: 10px; border-left: 3px dashed #ffb6c1; padding-left: 20px; justify-content: flex-start; }
+        .right-tab-item { padding: 12px 18px; background: white; border: 2px solid #ffb6c1; border-radius: 18px; cursor: pointer; font-weight: 800; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; transition: 0.3s; color: #2d3436; }
+        .right-tab-item:hover, .right-tab-item.active-tab { background: linear-gradient(45deg, #ff4757, #ff6b81); color: white; border-color: transparent; transform: translateX(-5px); box-shadow: -5px 10px 20px rgba(255,105,180,0.2); }
+
+        .tab-panel { display: none; width: 100%; }
+        .tab-panel.active-panel { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* PANELLER */
+        .vacation-grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
+        .vac-panel { background: rgba(255,255,255,0.95); border-radius: 30px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 3px solid #ffb6c1; display: flex; flex-direction: column; gap: 12px; }
+        
+        .vac-label { font-size: 0.85rem; font-weight: 800; color: #ff6b81; text-transform: uppercase; margin-bottom: 3px; display: block; }
+        .vac-input { width: 100%; padding: 12px 18px; border-radius: 15px; border: 2px solid rgba(255,182,193,0.4); font-size: 1rem; font-weight: bold; background: #fff; outline: none; }
+        .vac-select { padding: 12px 15px; border-radius: 15px; border: 2px solid rgba(255,182,193,0.4); font-weight: bold; background: #fff; cursor: pointer; color: #d81b60; width: 100%; outline: none; }
+        
+        .search-city-box { display: flex; gap: 10px; margin-bottom: 5px; }
+        .search-city-input { flex: 1; padding: 10px 15px; border-radius: 15px; border: 2px solid #74b9ff; font-weight: bold; font-size: 0.95rem; outline: none; }
+
+        #map-container { width: 100%; height: 260px; border-radius: 20px; border: 3px solid #ffb6c1; overflow: hidden; position: relative; z-index: 1;}
+        
+        /* KARTLAR VE GALERİLER */
+        .gourmet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; max-height: 65vh; overflow-y: auto; padding-right: 5px; }
+        .food-card { background: white; border: 2px solid #ffe2e2; border-radius: 20px; padding: 15px; display: flex; flex-direction: column; gap: 8px; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+        .food-card:hover { border-color: #ff4757; transform: translateY(-3px); }
+        .added-by-badge { font-size: 0.75rem; font-weight: 800; background: #f1f2f6; padding: 3px 8px; border-radius: 8px; display: inline-block; color: #2f3542; margin-top: 5px;}
+        .food-add-btn { background: #ff4757; color: white; border: none; padding: 8px 12px; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 0.85rem; }
+
+        /* LÜKS OTEL KARTI */
+        .hotel-card { background: #f8f9fa; border: 2px solid #dfe6e9; padding: 15px; border-radius: 18px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
+        .hotel-card.selected-hotel-active { border-color: #2ed573; background: #f1fdf4; box-shadow: 0 5px 15px rgba(46,213,115,0.1); }
+        .hotel-feature-tag { font-size: 0.7rem; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 6px; font-weight: 800; margin-right: 4px; display: inline-block; margin-top: 4px; }
+
+        .vac-active-list { display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; background: #fff; padding: 12px; border-radius: 15px; border: 2px dashed #74b9ff; margin-bottom: 10px;}
+        .vac-active-item { display: flex; justify-content: space-between; align-items: center; background: #fdfbfb; padding: 10px 15px; border-radius: 12px; font-weight: bold; font-size: 0.9rem; border: 1px solid #eee;}
+
+        /* ÖRNEKLER HAVUZU */
+        .examples-pool-container { border: 2px dashed #a29bfe; padding: 15px; border-radius: 20px; background: rgba(162,155,254,0.05); }
+        .examples-scroll { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 5px; margin-top: 10px;}
+        .example-item { background: white; padding: 10px 15px; border-radius: 12px; border: 1px solid #dfe6e9; font-size: 0.9rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; transition: 0.2s;}
+        
+        /* SİLME ONAY MODAL */
+        #sweetDeleteModal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255,255,255,0.4); backdrop-filter: blur(8px); z-index: 100000; display: none; align-items: center; justify-content: center; }
+        .sweet-modal-box { background: white; padding: 35px; border-radius: 35px; box-shadow: 0 20px 50px rgba(255,105,180,0.3); border: 4px solid #ffb6c1; text-align: center; max-width: 350px; transform: scale(0.8); transition: transform 0.3s; }
+        .sweet-modal-box.show { transform: scale(1); }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #ffb6c1; border-radius: 10px; }
+
+        @media (max-width: 1150px) {
+            .top-dashboard-bar { flex-direction: column; align-items: stretch; text-align: center; }
+            .dashboard-layout { flex-direction: column-reverse; }
+            .right-navigation-bar { width: 100%; flex-direction: row; flex-wrap: wrap; border-left: none; border-bottom: 3px dashed #ffb6c1; padding-left: 0; padding-bottom: 15px; }
+            .vacation-grid-layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    
+    <div id="heart-bg"></div>
+
+    <!-- KİMLİK DOĞRULAMA (ŞİFRESİZ) -->
+    <div id="authScreen">
+        <div class="auth-box">
+            <div style="font-size: 4rem; margin-bottom: 10px;">💖</div>
+            <h2 style="color: #ff4757; margin-bottom: 10px;">Tatilimize Hoş Geldin!</h2>
+            <p style="color: #636e72; font-weight: 600; margin-bottom: 20px; font-size: 0.95rem;">Hangi aşığım geldi? (Örn: Sude veya S)</p>
+            <input type="text" id="loginInput" class="auth-input" placeholder="İsmini veya baş harfini gir..." onkeypress="if(event.key === 'Enter') doLogin()">
+            <button class="auth-btn" onclick="doLogin()">İçeri Gir 🚪</button>
+        </div>
+    </div>
+
+    <!-- SİLME MODAL -->
+    <div id="sweetDeleteModal">
+        <div class="sweet-modal-box" id="sweetModalBox">
+            <div style="font-size: 3.5rem; margin-bottom: 10px;">🥺</div>
+            <h3 style="color: #ff4757; font-weight:800; margin-bottom:10px;">Emin misin aşkım?</h3>
+            <div style="display:flex; justify-content:center; gap:15px; margin-top:20px;">
+                <button onclick="closeDeleteModal()" style="padding: 10px 18px; border-radius: 12px; border: none; font-weight: bold; background: #ebedee; color: #636e72; cursor: pointer;">Kalsın</button>
+                <button id="confirmDeleteBtn" style="padding: 10px 18px; border-radius: 12px; border: none; font-weight: bold; background: #ff4757; color: white; cursor: pointer;">Evet, Sil 🗑️</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="screen">
+        <div class="main-card">
+            
+            <!-- ÜST AKILLI DASHBOARD BARBARI -->
+            <div class="top-dashboard-bar">
+                <div class="remaining-budget-widget" id="budgetWidget">
+                    <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; opacity:0.9; display:block;">💸 KALAN BÜTÇEMİZ</span>
+                    <div class="budget-large-title" id="lblRemainingBudgetEUR">0 €</div>
+                    <span style="font-size:0.9rem; font-weight:600; opacity:0.85;" id="lblRemainingBudgetTRY">/ 0 ₺</span>
+                </div>
+                <h1 class="header-title">Sude & Şahin - Hayalimizdeki Tatil Dünyası ✈️💕</h1>
+                <div id="userBadge" class="user-badge">Misafir</div>
+            </div>
+            
+            <div class="dashboard-layout">
+                
+                <div class="main-content-area">
+                    
+                    <!-- SEKME 1: ROTA VE OTEL BULUCU -->
+                    <div id="panel-route" class="tab-panel active-panel">
+                        <div class="vacation-grid-layout">
+                            <div class="vac-panel">
+                                <h3 style="font-size: 1.3rem; color: #ff4757; border-bottom: 2px dashed #ffe2e2; padding-bottom: 5px;">🗺️ Rotamız & Otel Seçimi</h3>
+                                
+                                <div>
+                                    <span class="vac-label">📍 Şehir Seçimi (Ucuzdan Pahalıya)</span>
+                                    <div class="search-city-box">
+                                        <input type="text" id="citySearchBox" class="search-city-input" placeholder="Şehir ara..." oninput="filterCitySelect()">
+                                    </div>
+                                    <select id="vacCity" class="vac-select" onchange="updateCitySelect()">
+                                        <option value="ankara">Ankara (₺ - En Uygun)</option>
+                                        <option value="hatay">Hatay (₺₺)</option>
+                                        <option value="gaziantep">Gaziantep (₺₺)</option>
+                                        <option value="trabzon">Trabzon (₺₺₺)</option>
+                                        <option value="izmir">İzmir (₺₺₺)</option>
+                                        <option value="antalya">Antalya (₺₺₺₺)</option>
+                                        <option value="istanbul">İstanbul (₺₺₺₺₺)</option>
+                                        <option value="mugla">Muğla (₺₺₺₺₺ - En Pahalı)</option>
+                                        <option value="custom">📍 Haritadan Özel Seçim</option>
+                                    </select>
+                                </div>
+
+                                <div style="display: flex; gap: 15px;">
+                                    <div style="flex: 1;">
+                                        <span class="vac-label">💰 Başlangıç Ana Bütçesi</span>
+                                        <div style="display:flex; gap:5px;">
+                                            <input type="number" id="vacBudget" class="vac-input" value="60000" oninput="updateSettings()">
+                                            <select id="vacCurrency" class="vac-select" style="width:auto;" onchange="updateSettings()">
+                                                <option value="TRY">TL (₺)</option>
+                                                <option value="EUR">EUR (€)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div style="flex: 0.5;">
+                                        <span class="vac-label">📆 Gün Sayısı</span>
+                                        <input type="number" id="vacDuration" class="vac-input" min="1" value="7" oninput="updateSettings()">
+                                    </div>
+                                </div>
+
+                                <div id="map-container">
+                                    <div id="vacationMap" style="width: 100%; height: 100%;"></div>
+                                </div>
+
+                                <div style="margin-top: 5px;">
+                                    <span class="vac-label">🏨 Güncel Oteller (Sabit Ayar: Tek Oda, Büyük Yatak)</span>
+                                    <!-- Değiştirildi: max-height büyütüldü -->
+                                    <div id="hotelsContainer" style="max-height: 350px; overflow-y:auto; padding-right:5px; margin-top:5px;"></div>
+                                </div>
+                            </div>
+
+                            <div class="vac-panel" style="border-color: #74b9ff;">
+                                <h3 style="font-size: 1.3rem; color: #0984e3; border-bottom: 2px dashed #c8d6e5; padding-bottom: 5px;">📝 Bize Özel Planlarımız</h3>
+                                
+                                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                    <input type="text" id="vacCustomInput" class="vac-input" placeholder="Yeni plan yaz bebeğim..." style="border-color:#74b9ff;">
+                                    <button class="auth-btn" style="width:auto; padding: 10px 20px; font-size:1rem; border-radius:15px; background: linear-gradient(45deg, #0984e3, #74b9ff);" onclick="addCustomRoutePlan()">Ekle</button>
+                                </div>
+
+                                <span class="vac-label" style="color: #0984e3;">✨ Aktif Plan Listemiz</span>
+                                <div class="vac-active-list" id="routeActiveList"></div>
+                                
+                                <!-- 120 ÖRNEK HAVUZU -->
+                                <div class="examples-pool-container">
+                                    <h4 style="font-size:0.95rem; color:#6c5ce7; font-weight:800;">💡 İlham Havuzu (120 Öneri)</h4>
+                                    <p style="font-size:0.75rem; color:#a29bfe; font-weight:600; margin-bottom:5px;">Üzerine tıklayıp listemize aktarabilirsin.</p>
+                                    <div class="examples-scroll" id="examplesPool"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SEKME 2: 70 GURME YEMEK SEÇİMİ -->
+                    <div id="panel-food" class="tab-panel">
+                        <div style="margin-bottom: 15px; background: white; padding: 15px; border-radius: 20px; border: 2px dashed #ff4757;">
+                            <h3 style="color:#ff4757; font-size:1.3rem; margin-bottom:5px;">🍽️ <span id="foodCityTitle">Şehre Özel</span> Gurme Lezzetler (70 Çeşit)</h3>
+                            <p style="font-size:0.9rem; color:#636e72; font-weight:600;">Seçilen şehre göre anlık güncellenir. Eklenen her yemek bütçenizden otomatik düşer.</p>
+                        </div>
+                        <div class="gourmet-grid" id="gourmetFoodsContainer"></div>
+                    </div>
+
+                    <!-- SEKME 3: 🎭 EĞLENCE & GEZİLECEK YERLER -->
+                    <div id="panel-entertainment" class="tab-panel">
+                        <div style="margin-bottom: 15px; background: white; padding: 15px; border-radius: 20px; border: 2px dashed #6c5ce7;">
+                            <h3 style="color:#6c5ce7; font-size:1.3rem; margin-bottom:5px;">🎭 Lunaparklar, Tema Parklar & Eğlence Merkezleri</h3>
+                            <p style="font-size:0.9rem; color:#636e72; font-weight:600;">Gittiğimiz şehirde paralı olan tüm eğlence, macera ve gezilecek lüks aktiviteler listesidir.</p>
+                        </div>
+                        <div class="gourmet-grid" id="entertainmentContainer"></div>
+                    </div>
+
+                    <!-- SEKME 4: SEÇİLEN YEMEKLER VE AKTİVİTELER ÖZETİ -->
+                    <div id="panel-selected-foods" class="tab-panel">
+                        <div style="background: white; padding: 20px; border-radius: 20px; border: 3px solid #ffb6c1;">
+                            <h3 style="color:#d81b60; font-size:1.4rem; margin-bottom:15px; border-bottom: 2px dashed #ffe2e2; padding-bottom:10px;">🤤 Alışveriş Sepetimiz (Yemekler & Eğlenceler)</h3>
+                            <div id="selectedFoodsListContainer" style="display:flex; flex-direction:column; gap:12px; max-height:65vh; overflow-y:auto; padding-right:10px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- SEKME 5: VALİZ -->
+                    <div id="panel-luggage" class="tab-panel">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="vac-panel" style="border-color:#e84393;">
+                                <h3 style="color:#e84393;">🌸 Sude'nin Valizi</h3>
+                                <div style="display:flex; gap:10px;">
+                                    <input type="text" id="sudeItemInput" class="vac-input" placeholder="Eşya ekle...">
+                                    <button class="auth-btn" style="width:auto; padding:10px 15px; border-radius:15px;" onclick="addLuggageItem('sude')">+</button>
+                                </div>
+                                <div class="vac-active-list" id="sudeLuggageList" style="border-color:#e84393; max-height:50vh;"></div>
+                            </div>
+                            <div class="vac-panel" style="border-color:#2d3436;">
+                                <h3 style="color:#2d3436;">🖤 Şahin'in Valizi</h3>
+                                <div style="display:flex; gap:10px;">
+                                    <input type="text" id="sahinItemInput" class="vac-input" placeholder="Eşya ekle..." style="border-color:#2d3436;">
+                                    <button class="auth-btn" style="width:auto; padding:10px 15px; border-radius:15px; background:#2d3436;" onclick="addLuggageItem('sahin')">+</button>
+                                </div>
+                                <div class="vac-active-list" id="sahinLuggageList" style="border-color:#2d3436; max-height:50vh;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SEKME 6: AŞK NOTLARI -->
+                    <div id="panel-notes" class="tab-panel">
+                        <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                            <input type="text" id="loveNoteInput" class="vac-input" placeholder="Tatlı bir aşk notu bırak bebeğim... 💕">
+                            <button class="auth-btn" style="width:auto; padding:0 30px; border-radius:15px;" onclick="addLoveNote()">Not Bırak 📝</button>
+                        </div>
+                        <div class="gourmet-grid" id="loveNotesContainer"></div>
+                    </div>
+
+                </div>
+
+                <!-- SAĞ MENÜ -->
+                <div class="right-navigation-bar">
+                    <div class="right-tab-item active-tab" onclick="switchTab('route', this)">🗺️ Rota & Lüks Oteller</div>
+                    <div class="right-tab-item" onclick="switchTab('food', this)">🍽️ Şehrin Lezzetleri</div>
+                    <div class="right-tab-item" onclick="switchTab('entertainment', this)" style="border-color:#6c5ce7; color:#6c5ce7;">🎭 Eğlence & Macera</div>
+                    <div class="right-tab-item" onclick="switchTab('selected-foods', this)" style="border-color:#d81b60; color:#d81b60;">🤤 Seçilen Toplam Liste</div>
+                    <div class="right-tab-item" onclick="switchTab('luggage', this)">🧳 Valiz Odası</div>
+                    <div class="right-tab-item" onclick="switchTab('notes', this)">💖 Aşk Notlarımız</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://betting-representation-violation-tomato.trycloudflare.com"; 
+        
+        let currentUser = "Misafir";
+        let eurToTryRate = 37.50;
+        let map, currentMarker;
+
+        // SEÇİM YAPILARI DAHİL STATE
+        let appState = {
+            vacationSettings: { city: 'ankara', customName: '', lat: 39.9334, lng: 32.8597, duration: 7, budget: 60000, currency: 'TRY' },
+            routePlans: [],
+            deletedExamples: [],
+            selectedFoods: [],        // { id, addedBy }
+            selectedActivities: [],   // { id, addedBy }
+            bookedHotel: null,        // { cityId, hotelIndex } - Sadece 1 tane aktif otel seçilebilir
+            luggage: { sude: [], sahin: [] },
+            loveNotes: []
+        };
+
+        const cityCoords = {
+            ankara: [39.9334, 32.8597], hatay: [36.2023, 36.1613], gaziantep: [37.0662, 37.3833],
+            trabzon: [41.0027, 39.7168], izmir: [38.4237, 27.1428], antalya: [36.8969, 30.7133],
+            istanbul: [41.0082, 28.9784], mugla: [37.2153, 28.3636]
+        };
+
+        // Değiştirildi: OTEL VERİTABANI TAMAMEN GENİŞLETİLDİ (Ne kadar eklenirse otomatik hepsi listelenir)
+        const hotelsDatabase = {
+            ankara: [
+                {name: "Ankara Divan Otel", price: 2400, tags: ["Havuzlu", "Şehir Manzaralı", "Açık Büfe Kahvaltı"]},
+                {name: "Gazi Park Premium", price: 1800, tags: ["Doğa Manzaralı", "Jakuzili", "Spa Dahil"]},
+                {name: "Ulus Tarihi Konak Butik", price: 1200, tags: ["Nostaljik", "Merkezi Konum"]},
+                {name: "JW Marriott Ankara", price: 5500, tags: ["Lüks", "VIP Hizmet", "Kapalı Havuz"]},
+                {name: "Sheraton Ankara Hotel", price: 4200, tags: ["Şehir Merkezi", "Tenis Kortu"]},
+                {name: "Bilkent Hotel", price: 2900, tags: ["Doğa İçinde", "Sakin", "Oda Servisi"]},
+                {name: "Green Park Ankara", price: 2100, tags: ["Termal Spa", "Büyük Yatak"]}
+            ],
+            hatay: [
+                {name: "Antakya Müze Otel", price: 3100, tags: ["Cam Tabanlı Müze Odası", "Açık Havuzlu", "Özel Gurme Kahvaltı"]},
+                {name: "Savon Tarihi Otel", price: 2400, tags: ["Tarihi Avlu", "Taş Oda", "Canlı Müzik"]},
+                {name: "Harbiye Şelale Butik", price: 1500, tags: ["Şelale Manzaralı", "Doğa Dostu"]},
+                {name: "Güngör Ottoman Palace", price: 3800, tags: ["Termal Su", "Lüks Osmanlı Mimarisi"]},
+                {name: "The Museum Hotel Antakya", price: 4500, tags: ["Tarihle İç İçe", "Jakuzi", "VIP"]}
+            ],
+            gaziantep: [
+                {name: "Hışvahan Tarihi Butik", price: 3800, tags: ["Lüks Taş Saray", "Gaziantep Kalesi Manzaralı", "VIP Hizmet"]},
+                {name: "Divan Otel Gaziantep", price: 2600, tags: ["Kapalı Havuz", "Masaj Salonu", "Kral Yatağı"]},
+                {name: "Şirehan Otel", price: 1900, tags: ["Tarihi Han Odaları", "Avlu Manzaralı"]},
+                {name: "Grand Hotel Gaziantep", price: 2300, tags: ["Şehir Manzarası", "Teras Kafe"]},
+                {name: "Tuğcan Hotel", price: 2100, tags: ["Açık Büfe", "Merkezi"]}
+            ],
+            trabzon: [
+                {name: "Zorlu Grand Luxury", price: 3500, tags: ["Sonsuzluk Havuzlu", "Sauna & Hamam", "Merkezde"]},
+                {name: "Uzungöl Doğa Ahşap Bungalov", price: 2900, tags: ["Göl Manzaralı", "Şömineli", "Tamamen Ahşap"]},
+                {name: "Meydan Palas", price: 1700, tags: ["Ekonomik Konfor", "Büyük Çift Kişilik Yatak"]},
+                {name: "Panagia Premier Trabzon", price: 3100, tags: ["Deniz Manzaralı", "Lüks İç Tasarım"]},
+                {name: "Radisson Blu Hotel", price: 4600, tags: ["Sonsuzluk Havuzu", "Şehir Tepesi Manzarası"]},
+                {name: "Mercure Trabzon Hotel", price: 2800, tags: ["Modern Tasarım", "Havalimanı Yakını"]}
+            ],
+            izmir: [
+                {name: "Swissotel Büyük Efes", price: 5200, tags: ["Kordon Manzaralı", "Dev Açık Havuz", "Tenis Kortu", "Lüks Spa"]},
+                {name: "Kordon Pasaport Otel", price: 2900, tags: ["Deniz Sıfır", "Gün Batımı Manzarası"]},
+                {name: "Alsancak Boutique Room", price: 2100, tags: ["Tasarım Odalar", "Merkezi Eğlenceye Yakın"]},
+                {name: "Renaissance Izmir", price: 4100, tags: ["Çatı Havuzu", "Boutique Lüks"]},
+                {name: "Key Hotel", price: 5800, tags: ["Kordon VIP", "Kral Dairesi", "Özel Şarap Mahzeni"]}
+            ],
+            antalya: [
+                {name: "Rixos Downtown Antalya", price: 6900, tags: ["Akdeniz Manzaralı", "Isıtmalı Havuz", "Konsept Partiler"]},
+                {name: "Kaleiçi Alp Paşa Konağı", price: 3500, tags: ["Tarihi Havuzlu Avlu", "Jakuzili Oda", "Romantik Işıklandırma"]},
+                {name: "Lara Beach Resort", price: 2600, tags: ["Özel Plaj", "Su Parkı Entegreli"]},
+                {name: "Maxx Royal Kemer", price: 15500, tags: ["Ultra Lüks", "Kum Plaj", "Özel Villa Konsepti"]},
+                {name: "Titanic Mardan Palace", price: 12000, tags: ["Saray Mimarisi", "Devasa Havuzlar", "Akşam Gösterileri"]},
+                {name: "Akra Hotel", price: 5100, tags: ["Sonsuzluk Havuzu", "Canlı Müzik", "Şık Tasarım"]}
+            ],
+            istanbul: [
+                {name: "Çırağan Palace Kempinski", price: 19500, tags: ["Boğaz Sıfır Tarihi Saray", "Sonsuzluk Havuzu", "7/24 Özel Kahya"]},
+                {name: "Galata Tower View Boutique", price: 5800, tags: ["Yataktan Galata Kulesi Manzaralı", "Teras Cafe"]},
+                {name: "Sultanahmet Ottoman Mansion", price: 3800, tags: ["Tarihi Yarımada Manzarası", "Geleneksel Türk Hamamı"]},
+                {name: "Four Seasons Bosphorus", price: 21000, tags: ["Boğaz Manzaralı", "Tarihi Yapı", "Lüks Spa"]},
+                {name: "Raffles Istanbul", price: 17500, tags: ["Modern Lüks", "Zorlu Center", "Helikopter Pisti"]},
+                {name: "Pera Palace Hotel", price: 8900, tags: ["Nostaljik", "Atatürk'ün Odası", "Tarih Kokan"]},
+                {name: "The Ritz-Carlton", price: 14000, tags: ["Boğaz Manzaralı", "Lüks Küvet"]}
+            ],
+            mugla: [
+                {name: "Bodrum Mandarin Oriental", price: 27000, tags: ["Ege Denizi Manzaralı VIP Villa", "Özel İskele & Havuz", "Helikopter Pisti"]},
+                {name: "Fethiye Ölüdeniz Resort", price: 8900, tags: ["Babadağ Yamaç Manzaralı", "Her Şey Dahil Lüks", "Büyük Havuz"]},
+                {name: "Köyceğiz Bungalov Göl Evleri", price: 4100, tags: ["Göl İskelesi", "Doğa İçinde İzole", "Bisiklet Bedava"]},
+                {name: "D Maris Bay Datça", price: 32000, tags: ["Uçurum Manzarası", "Özel Helikopter", "5 Farklı Plaj"]},
+                {name: "Hillside Beach Club", price: 18500, tags: ["Özel Koy", "Açık Büfe Gelişmiş", "Doğal Tasarım"]},
+                {name: "Lujo Hotel Bodrum", price: 25000, tags: ["Sonsuz Lüks", "Parti Konsepti", "Özel Uçak"]}
+            ]
+        };
+
+        // ŞEHİRLERE GÖRE PARALI EĞLENCE PARKALARI VE AKTİVİTELER
+        const entertainmentDatabase = [
+            { id: 101, cityId: 'istanbul', name: "Vialand (Isfanbul) Tema Park", desc: "Sınırsız Roller Coaster ve Eğlence Üniteleri Giriş Bileti", price: 980 },
+            { id: 102, cityId: 'istanbul', name: "Lüks Boğazda Akşam Yemeği & Tekne Turu", desc: "Canlı Müzikli ve Yemekli Boğaz Gezisi (Çift Kişilik VIP)", price: 2500 },
+            { id: 103, cityId: 'istanbul', name: "Karaköy Madame Tussauds Müzesi", desc: "Balmumu Heykel Müzesi Giriş Bileti", price: 450 },
+            { id: 104, cityId: 'antalya', name: "The Land of Legends Tema Park", desc: "Türkiye'nin En Büyük Eğlence Parkı & Aqua Dünyası Günlük Giriş", price: 1950 },
+            { id: 105, cityId: 'antalya', name: "Köprülü Kanyon Pro Rafting & Zipline", desc: "Ekipmanlar ve Rehber Dahil Macera Paketi", price: 800 },
+            { id: 106, cityId: 'antalya', name: "Dev Antalya Akvaryumu & Kar Dünyası", desc: "Dünyanın En Uzun Tünel Akvaryumu Giriş Bileti", price: 650 },
+            { id: 107, cityId: 'mugla', name: "Fethiye Babadağ Yamaç Paraşütü", desc: "Ölüdeniz Manzaralı Pilot Eşliğinde Atlama ve Video Çekimi", price: 3800 },
+            { id: 108, cityId: 'mugla', name: "Göcek 12 Adalar VIP Yat Turu", desc: "Öğle Yemekli, Koylarda Duraklamalı Günübirlik Yat Gezisi", price: 2200 },
+            { id: 109, cityId: 'izmir', name: "Çeşme - Alaçatı Yat Turu", desc: "Köpük Partili ve Yemekli Koy Gezileri", price: 1200 },
+            { id: 110, cityId: 'izmir', name: "Efes Antik Kenti & Dijital Müze", desc: "Kombine Müze ve Deneyim Alanı Girişleri", price: 750 },
+            { id: 111, cityId: 'ankara', name: "Gençlik Parkı Dev Lunapark Büyük Paket", desc: "Dönme Dolap, Gondol ve Adrenalin Treni 10'lu Bilet Kombo", price: 400 },
+            { id: 112, cityId: 'ankara', name: "Atakule Seyir Terası & Akşam Yemeği", desc: "Ankara Ayaklarınızın Altında VIP Teras Girişi", price: 850 },
+            { id: 113, cityId: 'gaziantep', name: "Zeugma Mozaik Müzesi Rehberli Tur", desc: "Çingene Kızı Mozaiği Dahil Özel Anlatımlı Kültür Turu", price: 350 },
+            { id: 114, cityId: 'hatay', name: "Antakya Arkeoloji Müzesi Giriş Paketi", desc: "Dünyanın En Büyük Mozaik Koleksiyonlarından Biri", price: 300 },
+            { id: 115, cityId: 'trabzon', name: "Sümela Manastırı & Uzungöl Doğa Turu", desc: "Özel Şoförlü ve Giriş Biletli Günübirlik Dağ Gezisi", price: 1400 }
+        ];
+
+        // 70 GURME YEMEK DATABASE'I
+        const gourmetFoodsDatabase = [
+            { id: 1, cityId: 'ankara', name: "Boğaziçi Ankara Tava", rest: "Ulus, Boğaziçi Lokantası", price: 490 },
+            { id: 2, cityId: 'ankara', name: "SSK İkramlı Aspava", rest: "Gültepe Meşhur Aspava", price: 430 },
+            { id: 3, cityId: 'ankara', name: "AOÇ Kokoreç", rest: "Atatürk Orman Çiftliği", price: 280 },
+            { id: 4, cityId: 'ankara', name: "Ankara Simidi & Çay", rest: "Kızılay Tarihi Fırın", price: 75 },
+            { id: 5, cityId: 'ankara', name: "Beypazarı Kurusu Tatlısı", rest: "Beypazarı Merkez", price: 150 },
+            { id: 6, cityId: 'ankara', name: "Çubuk Turşulu Kavurma", rest: "Çubuk Merkez Lokantası", price: 320 },
+            { id: 7, cityId: 'ankara', name: "Tarihi Ulus Döneri", rest: "Süha Döner, Ulus", price: 380 },
+            { id: 8, cityId: 'ankara', name: "Gordion Badem Ezmesi", rest: "Polatlı Çarşı", price: 200 },
+            { id: 9, cityId: 'hatay', name: "Közde Antakya Künefesi", rest: "Tarihi Çınaraltı, Antakya", price: 240 },
+            { id: 10, cityId: 'hatay', name: "Tepsi Kebabı", rest: "Pöç Kasabı, Uzun Çarşı", price: 580 },
+            { id: 11, cityId: 'hatay', name: "Kağıt Kebabı", rest: "Kasap Aydın", price: 560 },
+            { id: 12, cityId: 'hatay', name: "Oruk (İçli Köfte)", rest: "Anadolu Restaurant", price: 180 },
+            { id: 13, cityId: 'hatay', name: "Biberli Ekmek Kahvaltısı", rest: "Harbiye Şelale Cafe", price: 320 },
+            { id: 14, cityId: 'hatay', name: "Cevizli Biber & Humus", rest: "Sultan Sofrası", price: 290 },
+            { id: 15, cityId: 'hatay', name: "Tuzda Tavuk", rest: "Harbiye Boğaziçi", price: 750 },
+            { id: 16, cityId: 'hatay', name: "Hatay Usulü Dürüm", rest: "Dönerci Tacettin", price: 190 },
+            { id: 17, cityId: 'gaziantep', name: "İmam Çağdaş Ali Nazik", rest: "Şahinbey, Gaziantep", price: 740 },
+            { id: 18, cityId: 'gaziantep', name: "Kuru Katmer", rest: "Zekeriya Usta", price: 480 },
+            { id: 19, cityId: 'gaziantep', name: "Beyran Çorbası", rest: "Metanet Lokantası", price: 295 },
+            { id: 20, cityId: 'gaziantep', name: "Küşleme Kebabı", rest: "Küşlemeci Halil Usta", price: 650 },
+            { id: 21, cityId: 'gaziantep', name: "Nohut Dürüm", rest: "Dürümcü Recep Usta", price: 120 },
+            { id: 22, cityId: 'gaziantep', name: "Gaziantep Lahmacunu", rest: "Çıtır Lahmacun", price: 140 },
+            { id: 23, cityId: 'gaziantep', name: "Havuç Dilimi Baklava", rest: "Koçak Baklava", price: 450 },
+            { id: 24, cityId: 'gaziantep', name: "Yuvalama Çorbası", rest: "Aşina Restaurant", price: 310 },
+            { id: 25, cityId: 'trabzon', name: "Akçaabat Köftesi", rest: "Cemil Usta, Akçaabat", price: 470 },
+            { id: 26, cityId: 'trabzon', name: "Tereyağlı Sürmene Pidesi", rest: "Bozo Pide", price: 410 },
+            { id: 27, cityId: 'trabzon', name: "Hamsiköy Sütlacı", rest: "Niyazi Usta, Hamsiköy", price: 180 },
+            { id: 28, cityId: 'trabzon', name: "Kuymak (Mıhlama)", rest: "Uzungöl Doğa Restaurant", price: 350 },
+            { id: 29, cityId: 'trabzon', name: "Trabzon Döneri", rest: "Kalkanoğlu Pilavı Yanı", price: 340 },
+            { id: 30, cityId: 'trabzon', name: "Laz Böreği", rest: "Tarihi Meydan Pastanesi", price: 190 },
+            { id: 31, cityId: 'trabzon', name: "Hamsi Tava", rest: "Bordo Mavi Balık", price: 380 },
+            { id: 32, cityId: 'izmir', name: "Kordon Kumrusu", rest: "Kumrucu Şevki", price: 230 },
+            { id: 33, cityId: 'izmir', name: "Boyoz & Fırın Yumurta", rest: "Alsancak Dostlar Fırını", price: 95 },
+            { id: 34, cityId: 'izmir', name: "İzmir Köfte", rest: "Adil Müftüoğlu Uğur Lokantası", price: 390 },
+            { id: 35, cityId: 'izmir', name: "Kemeraltı Söğüş", rest: "Kelleci Muammer", price: 290 },
+            { id: 36, cityId: 'izmir', name: "Meşhur Şambali", rest: "Şambalici Melek", price: 110 },
+            { id: 37, cityId: 'izmir', name: "Deniz Börülcesi & Balık", rest: "Kordon Yengeç", price: 850 },
+            { id: 38, cityId: 'izmir', name: "Bomba Tatlısı", rest: "Çelebi Unlu Mamulleri", price: 80 },
+            { id: 39, cityId: 'izmir', name: "Tire Şiş Köfte", rest: "Tarihi Tire Lokantası", price: 440 },
+            { id: 40, cityId: 'antalya', name: "Tahinli Piyaz", rest: "7 Mehmet Restaurant", price: 250 },
+            { id: 41, cityId: 'antalya', name: "Antalya Şiş Köfte", rest: "Tarihi Topçu Kebap", price: 420 },
+            { id: 42, cityId: 'antalya', name: "Yanık Dondurma", rest: "Korkuteli Dondurmacısı", price: 130 },
+            { id: 43, cityId: 'antalya', name: "Serpme Köy Kahvaltısı", rest: "Çakırlar Yolu Kahvaltıcısı", price: 550 },
+            { id: 44, cityId: 'antalya', name: "Hibeş Mezesi", rest: "Kaleiçi Meyhanesi", price: 220 },
+            { id: 45, cityId: 'antalya', name: "Alanya Bohçası", rest: "Alanya Yöresel Mutfak", price: 340 },
+            { id: 46, cityId: 'antalya', name: "Grida Balığı", rest: "Lara Balık Evi", price: 1200 },
+            { id: 47, cityId: 'antalya', name: "Arap Kadayıfı", rest: "Tarihi Tatlıcı", price: 160 },
+            { id: 48, cityId: 'istanbul', name: "Eminönü Balık Ekmek", rest: "Tarihi Tekneler", price: 180 },
+            { id: 49, cityId: 'istanbul', name: "Sultanahmet Köftesi", rest: "Tarihi Sultanahmet", price: 350 },
+            { id: 50, cityId: 'istanbul', name: "Ortaköy Kumpir", rest: "Boğaz İskelesi", price: 260 },
+            { id: 51, cityId: 'istanbul', name: "Sarıyer Böreği", rest: "Tarihi Karaköy Börekçisi", price: 170 },
+            { id: 52, cityId: 'istanbul', name: "Karaköy Fıstıklı Baklava", rest: "Karaköy Güllüoğlu", price: 340 },
+            { id: 53, cityId: 'istanbul', name: "Kanlıca Yoğurdu", rest: "İsmail Ağa", price: 130 },
+            { id: 54, cityId: 'istanbul', name: "Sütlüce Uykuluk", rest: "Ömür Uykuluk", price: 420 },
+            { id: 55, cityId: 'istanbul', name: "Vefa Bozası", rest: "Tarihi Vefa Bozacısı", price: 120 },
+            { id: 56, cityId: 'istanbul', name: "Çengelköy Çikolatası", rest: "Çengelköy Çikolatacısı", price: 195 },
+            { id: 57, cityId: 'istanbul', name: "Islak Hamburger", rest: "Taksim Kızılkayalar", price: 90 },
+            { id: 58, cityId: 'mugla', name: "Bodrum Çökertme", rest: "Sünger Pizza", price: 680 },
+            { id: 59, cityId: 'mugla', name: "Kabak Çiçeği Dolması", rest: "Köyceğiz Sahil", price: 290 },
+            { id: 60, cityId: 'mugla', name: "Mavi Yengeç", rest: "Dalyan Kanal Restaurant", price: 850 },
+            { id: 61, cityId: 'mugla', name: "Ege Otları Kavurması", rest: "Akyaka Yöresel", price: 310 },
+            { id: 62, cityId: 'mugla', name: "Datça Bademli Balık", rest: "Datça Liman Balıkçısı", price: 950 },
+            { id: 63, cityId: 'mugla', name: "Muğla Saray Helvası", rest: "Tarihi Helvacı", price: 160 },
+            { id: 64, cityId: 'mugla', name: "Bitez Dondurması", rest: "Bitez Dondurmacısı", price: 140 },
+            { id: 65, cityId: 'mugla', name: "Marmaris Balı & Kahvaltı", rest: "Hisarönü Kahvaltısı", price: 580 },
+            { id: 66, cityId: 'ankara', name: "Kızılay Sokak Sosislisi", rest: "Kızılay Büfeleri", price: 110 },
+            { id: 67, cityId: 'izmir', name: "Ödemiş Köftesi", rest: "Hurşit Usta", price: 360 },
+            { id: 68, cityId: 'hatay', name: "Zahter Salatası", rest: "Antakya Merkez", price: 190 },
+            { id: 69, cityId: 'gaziantep', name: "Simit Kebabı", rest: "Aşina", price: 540 },
+            { id: 70, cityId: 'trabzon', name: "Karalahana Çorbası", rest: "Meydan Yöresel Mutfak", price: 170 }
+        ];
+
+        // "FİKİR X" ETİKETLERİNDEN ARINDIRILMIŞ HAVUZ ÜRETİCİSİ
+        const generateExamples = () => {
+            const bases = [
+                "Sahilde el ele yürüyüş yapmak", "Şehrin en yüksek tepesinde manzara izlemek", 
+                "Gece sokak müzisyenleriyle dans etmek", "Gün batımında birbirimize sarılıp fotoğraf çekilmek", 
+                "Bölgenin en ünlü tarihi yerini keşfetmek", "Deniz/göl kenarında romantik piknik", 
+                "Sabah erken uyanıp boş sokaklarda koşmak", "Şehrin en eski kafesinde tatlı krizi gecesi", 
+                "Birbirimize o şehirden küçük bir anı/magnet seçmek", "Harika bir vapur/tekne turuna katılmak",
+                "Yıldızların altında geleceğe dair planlar kurmak", "Kokoreç yerken birbirimizin gözlerine bakıp gülmek",
+                "Yerel el yapımı çarşıları gezip nostalji yapmak", "Yağmurlu havada tek şemsiyeyle yürümek"
+            ];
+            let arr = [];
+            for(let i=0; i<120; i++){
+                arr.push({ id: `ex_${i}`, text: `${bases[i % bases.length]} ✨` });
+            }
+            return arr;
+        };
+        const allExamples = generateExamples();
+
+        // GİRİŞ DOĞRULAMA (S / Şahin / Sude)
+        function doLogin() {
+            let val = document.getElementById('loginInput').value.trim().toLowerCase();
+            if(!val) return;
+            if(val === 's' || val === 'ş' || val === 'sahin' || val === 'şahin') currentUser = 'Şahin';
+            else currentUser = 'Sude';
+            
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('userBadge').innerText = `${currentUser} Aktif 🟢`;
+            renderAllData();
+        }
+
+        // TAB GEÇİŞLERİ
+        function switchTab(panelId, btnElement) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active-panel'));
+            document.querySelectorAll('.right-tab-item').forEach(b => b.classList.remove('active-tab'));
+            document.getElementById(`panel-${panelId}`).classList.add('active-panel');
+            btnElement.classList.add('active-tab');
+
+            if(panelId === 'route' && map) setTimeout(() => map.invalidateSize(), 150);
+        }
+
+        // HARİTA ALTYAPISI
+        function initMapSystem() {
+            map = L.map('vacationMap', { zoomControl: false }).setView([appState.vacationSettings.lat, appState.vacationSettings.lng], 11);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+            currentMarker = L.marker([appState.vacationSettings.lat, appState.vacationSettings.lng]).addTo(map);
+
+            map.on('click', async function(e) {
+                const lat = e.latlng.lat, lng = e.latlng.lng;
+                currentMarker.setLatLng([lat, lng]);
+                appState.vacationSettings.lat = lat; appState.vacationSettings.lng = lng;
+                appState.vacationSettings.city = 'custom';
+                document.getElementById('vacCity').value = 'custom';
+                appState.bookedHotel = null; // Şehir değiştiği için otel sıfırlanır
+
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                    const data = await response.json();
+                    appState.vacationSettings.customName = data.address.city || data.address.town || data.address.province || "Özel Rota";
+                } catch(err) { appState.vacationSettings.customName = `Koordinat Rota`; }
+                
+                saveToServer(); renderAllData();
+            });
+        }
+
+        function filterCitySelect() {
+            let val = document.getElementById('citySearchBox').value.toLowerCase();
+            let opts = document.getElementById('vacCity').options;
+            for(let i=0; i<opts.length; i++) {
+                if(opts[i].text.toLowerCase().includes(val)) opts[i].style.display = "";
+                else opts[i].style.display = "none";
+            }
+        }
+
+        function updateCitySelect() {
+            const selectVal = document.getElementById('vacCity').value;
+            appState.bookedHotel = null; // Şehir değişince otel iptal edilir
+            if(selectVal !== 'custom' && cityCoords[selectVal]) {
+                const coords = cityCoords[selectVal];
+                appState.vacationSettings.city = selectVal;
+                appState.vacationSettings.lat = coords[0];
+                appState.vacationSettings.lng = coords[1];
+                appState.vacationSettings.customName = "";
+                map.flyTo(coords, 11, { animate: true, duration: 1.2 });
+                currentMarker.setLatLng(coords);
+            }
+            updateSettings();
+        }
+
+        function updateSettings() {
+            appState.vacationSettings.duration = parseInt(document.getElementById('vacDuration').value) || 1;
+            appState.vacationSettings.budget = parseFloat(document.getElementById('vacBudget').value) || 0;
+            appState.vacationSettings.currency = document.getElementById('vacCurrency').value;
+            saveToServer(); renderAllData();
+        }
+
+        // AKILLI GELİŞMİŞ DÜŞÜŞLÜ BÜTÇE HESAPLAYICI (SOL ÜST KÖŞE)
+        function calculateFinancials() {
+            let initialBudget = appState.vacationSettings.budget;
+            let currency = appState.vacationSettings.currency;
+            let duration = appState.vacationSettings.duration;
+
+            // İlk olarak başlangıç bütçesini TL cinsine eşitleyelim
+            let totalBudgetInTRY = currency === 'EUR' ? initialBudget * eurToTryRate : initialBudget;
+
+            // Masrafları Hesaba Katma
+            let totalExpensesTRY = 0;
+
+            // 1. Seçilen Otel Masrafı (Günlük Fiyat x Gün Sayısı)
+            const cCity = appState.vacationSettings.city;
+            if(appState.bookedHotel && appState.bookedHotel.cityId === cCity && hotelsDatabase[cCity]) {
+                let hData = hotelsDatabase[cCity][appState.bookedHotel.hotelIndex];
+                if(hData) {
+                    totalExpensesTRY += (hData.price * duration);
+                }
+            }
+
+            // 2. Seçilen Yemek Masrafları
+            appState.selectedFoods.forEach(sf => {
+                let fData = gourmetFoodsDatabase.find(x => x.id === sf.id);
+                if(fData) totalExpensesTRY += fData.price;
+            });
+
+            // 3. Seçilen Aktivite/Eğlence Masrafları
+            appState.selectedActivities.forEach(sa => {
+                let aData = entertainmentDatabase.find(x => x.id === sa.id);
+                if(aData) totalExpensesTRY += aData.price;
+            });
+
+            // Kalan Para Hesaplama
+            let remainingTRY = totalBudgetInTRY - totalExpensesTRY;
+            let remainingEUR = remainingTRY / eurToTryRate;
+
+            // Arayüze Yazma
+            const widget = document.getElementById('budgetWidget');
+            if(remainingTRY < 0) {
+                widget.classList.add('danger-budget');
+                document.getElementById('lblRemainingBudgetEUR').innerText = "Aşım Var! 🥺";
+                document.getElementById('lblRemainingBudgetTRY').innerText = `${remainingTRY.toLocaleString('tr-TR')} ₺ (${remainingEUR.toFixed(0)} €)`;
+            } else {
+                widget.classList.remove('danger-budget');
+                document.getElementById('lblRemainingBudgetEUR').innerText = `${remainingEUR.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} €`;
+                document.getElementById('lblRemainingBudgetTRY').innerText = `/ ${remainingTRY.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺`;
+            }
+        }
+
+        // OTEL SEÇİM VE RENDER SİSTEMİ
+        function renderHotels() {
+            const c = appState.vacationSettings.city;
+            const container = document.getElementById('hotelsContainer');
+            if(c === 'custom' || !hotelsDatabase[c]) { 
+                container.innerHTML = `<p style="color:#636e72; font-size:0.9rem;">Özel koordinat seçildi, otelleri yerinde buluruz aşkım! 💕</p>`; 
+                return; 
+            }
+            
+            let html = "";
+            let days = appState.vacationSettings.duration;
+
+            hotelsDatabase[c].forEach((h, index) => {
+                let totalTry = h.price * days;
+                let totalEur = totalTry / eurToTryRate;
+                
+                let isBooked = appState.bookedHotel && appState.bookedHotel.cityId === c && appState.bookedHotel.hotelIndex === index;
+                let cardClass = isBooked ? "hotel-card selected-hotel-active" : "hotel-card";
+                let btnText = isBooked ? "Rezerve Edildi! ✅" : "Odayı Seç 🏨";
+                let btnStyle = isBooked ? "background:#2ed573;" : "background:#0984e3;";
+
+                let tagsHtml = h.tags.map(t => `<span class="hotel-feature-tag">✨ ${t}</span>`).join('');
+
+                html += `<div class="${cardClass}">
+                    <div style="flex:1; padding-right:10px;">
+                        <span style="font-weight:800; color:#2d3436; font-size:1rem; display:block;">🛏️ ${h.name}</span>
+                        <div>${tagsHtml}</div>
+                        <span style="font-size:0.75rem; color:#7f8c8d; font-weight:600; display:block; margin-top:5px;">Gecelik: ${h.price} ₺</span>
+                    </div>
+                    <div style="text-align:right; flex-shrink:0;">
+                        <div style="font-weight:900; color:#2d3436; font-size:1.1rem;">${totalTry.toLocaleString()} ₺</div>
+                        <div style="font-size:0.8rem; color:#7f8c8d; margin-bottom:5px;">${totalEur.toFixed(0)} € (${days} Günlük)</div>
+                        <button class="food-add-btn" style="${btnStyle} padding:6px 12px;" onclick="bookHotel('${c}', ${index})">${btnText}</button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function bookHotel(cityId, index) {
+            if(appState.bookedHotel && appState.bookedHotel.cityId === cityId && appState.bookedHotel.hotelIndex === index) {
+                appState.bookedHotel = null; // Aynı otele tekrar tıklanırsa iptal et
+            } else {
+                appState.bookedHotel = { cityId: cityId, hotelIndex: index };
+            }
+            saveToServer(); renderAllData();
+        }
+
+        // GURME LEZZETLER GALERİSİ
+        function renderGourmetFoodGallery() {
+            const container = document.getElementById('gourmetFoodsContainer');
+            const cCity = appState.vacationSettings.city;
+            document.getElementById('foodCityTitle').innerText = cCity === 'custom' ? 'Tüm' : document.getElementById('vacCity').options[document.getElementById('vacCity').selectedIndex].text.split('(')[0];
+            
+            let foodsToShow = cCity === 'custom' ? gourmetFoodsDatabase : gourmetFoodsDatabase.filter(f => f.cityId === cCity);
+            
+            let html = "";
+            foodsToShow.forEach(f => {
+                const isSelected = appState.selectedFoods.find(sf => sf.id === f.id);
+                const btnText = isSelected ? "Listede! ❤️" : "Ekle 🛒";
+                const btnStyle = isSelected ? "background:#2ed573;" : "";
+                let eurPrice = (f.price / eurToTryRate).toFixed(1);
+
+                html += `<div class="food-card">
+                    <div style="font-weight:800; color:#2d3436;">🍲 ${f.name}</div>
+                    <div style="font-size:0.8rem; color:#636e72;">📍 ${f.rest}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                        <span style="font-weight:900; color:#ff4757; font-size:1.05rem;">${f.price} ₺ <span style="font-size:0.75rem; color:#7f8c8d;">(${eurPrice}€)</span></span>
+                        <button class="food-add-btn" style="${btnStyle}" onclick="toggleGourmetFood(${f.id})">${btnText}</button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function toggleGourmetFood(fId) {
+            let existing = appState.selectedFoods.find(sf => sf.id === fId);
+            if(existing) {
+                appState.selectedFoods = appState.selectedFoods.filter(sf => sf.id !== fId);
+            } else {
+                appState.selectedFoods.push({ id: fId, addedBy: currentUser });
+            }
+            saveToServer(); renderAllData();
+        }
+
+        // 🎭 EĞLENCE VE AKTİVİTELER GALERİSİ
+        function renderEntertainmentGallery() {
+            const container = document.getElementById('entertainmentContainer');
+            const cCity = appState.vacationSettings.city;
+            
+            let activitiesToShow = cCity === 'custom' ? entertainmentDatabase : entertainmentDatabase.filter(a => a.cityId === cCity);
+            
+            if(activitiesToShow.length === 0) {
+                container.innerHTML = `<p style="padding:20px; color:#7f8c8d; font-weight:bold;">Bu şehre özel eğlence kaydı bulunmuyor, haritadan diğer şehirlere geçebilirsin aşkım!</p>`;
+                return;
+            }
+
+            let html = "";
+            activitiesToShow.forEach(a => {
+                const isSelected = appState.selectedActivities.find(sa => sa.id === a.id);
+                const btnText = isSelected ? "Katılıyoruz! 🎭" : "Plana Ekle 🎟️";
+                const btnStyle = isSelected ? "background:#2ed573;" : "background:#6c5ce7;";
+                let eurPrice = (a.price / eurToTryRate).toFixed(1);
+
+                html += `<div class="food-card" style="border-color:#dcdde1;">
+                    <div style="font-weight:800; color:#2d3436; font-size:0.95rem;">🎡 ${a.name}</div>
+                    <div style="font-size:0.75rem; color:#636e72; flex:1;">${a.desc}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                        <span style="font-weight:900; color:#6c5ce7; font-size:1.05rem;">${a.price} ₺ <span style="font-size:0.75rem; color:#7f8c8d;">(${eurPrice}€)</span></span>
+                        <button class="food-add-btn" style="${btnStyle}" onclick="toggleEntertainment(${a.id})">${btnText}</button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function toggleEntertainment(aId) {
+            let existing = appState.selectedActivities.find(sa => sa.id === aId);
+            if(existing) {
+                appState.selectedActivities = appState.selectedActivities.filter(sa => sa.id !== aId);
+            } else {
+                appState.selectedActivities.push({ id: aId, addedBy: currentUser });
+            }
+            saveToServer(); renderAllData();
+        }
+
+        // ALIŞVERİŞ SEPETİ / TOTAL SEÇİLENLER SEKME RENDERİ
+        function renderSelectedFoodsTab() {
+            const container = document.getElementById('selectedFoodsListContainer');
+            if(appState.selectedFoods.length === 0 && appState.selectedActivities.length === 0 && !appState.bookedHotel) {
+                container.innerHTML = `<p style="text-align:center; color:#b2bec3; font-weight:bold; padding:20px;">Henüz listeye hiçbir şey eklemedik aşkım... 🥺</p>`;
+                return;
+            }
+
+            let html = "";
+            let totalTry = 0;
+
+            // Önce varsa oteli gösterelim
+            const cCity = appState.vacationSettings.city;
+            if(appState.bookedHotel && appState.bookedHotel.cityId === cCity && hotelsDatabase[cCity]) {
+                let hData = hotelsDatabase[cCity][appState.bookedHotel.hotelIndex];
+                if(hData) {
+                    let hotelTotalCost = hData.price * appState.vacationSettings.duration;
+                    totalTry += hotelTotalCost;
+                    html += `<div class="vac-active-item" style="border-left: 5px solid #0984e3; background:#f0f3ff;">
+                        <div>
+                            <div style="font-weight:800; font-size:1.05rem; color:#2d3436;">🏨 Seçili Otelimiz: ${hData.name}</div>
+                            <div style="font-size:0.8rem; color:#636e72; font-weight:600;">Sabit Büyük Yataklı Oda (${appState.vacationSettings.duration} Gece)</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:900; color:#0984e3; font-size:1.1rem;">${hotelTotalCost.toLocaleString()} ₺</div>
+                            <button style="background:transparent; border:none; cursor:pointer; font-size:1rem;" onclick="bookHotel('${cCity}', ${appState.bookedHotel.hotelIndex})">İptal Et ❌</button>
+                        </div>
+                    </div>`;
+                }
+            }
+
+            // Yemekler listesi
+            appState.selectedFoods.forEach(sf => {
+                let fData = gourmetFoodsDatabase.find(x => x.id === sf.id);
+                if(fData) {
+                    totalTry += fData.price;
+                    let eurPrice = (fData.price / eurToTryRate).toFixed(1);
+                    let addedText = sf.addedBy === currentUser ? "Sen ekledin" : `${sf.addedBy} ekledi`;
+                    
+                    html += `<div class="vac-active-item" style="border-left: 5px solid #ff4757;">
+                        <div>
+                            <div style="font-weight:800; color:#2d3436;">🍲 ${fData.name}</div>
+                            <div style="font-size:0.75rem; color:#636e72;">📍 ${fData.rest}</div>
+                            <div class="added-by-badge">👤 ${addedText}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:900; color:#d81b60;">${fData.price} ₺</div>
+                            <div style="font-size:0.75rem; color:#7f8c8d;">${eurPrice} €</div>
+                            <button style="background:transparent; border:none; cursor:pointer;" onclick="toggleGourmetFood(${fData.id})">🗑️</button>
+                        </div>
+                    </div>`;
+                }
+            });
+
+            // Eğlenceler listesi
+            appState.selectedActivities.forEach(sa => {
+                let aData = entertainmentDatabase.find(x => x.id === sa.id);
+                if(aData) {
+                    totalTry += aData.price;
+                    let eurPrice = (aData.price / eurToTryRate).toFixed(1);
+                    let addedText = sa.addedBy === currentUser ? "Sen ekledin" : `${sa.addedBy} ekledi`;
+
+                    html += `<div class="vac-active-item" style="border-left: 5px solid #6c5ce7;">
+                        <div>
+                            <div style="font-weight:800; color:#2d3436;">🎡 ${aData.name}</div>
+                            <div class="added-by-badge" style="background:#efedd6;">👤 ${addedText}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:900; color:#6c5ce7;">${aData.price} ₺</div>
+                            <div style="font-size:0.75rem; color:#7f8c8d;">${eurPrice} €</div>
+                            <button style="background:transparent; border:none; cursor:pointer;" onclick="toggleEntertainment(${aData.id})">🗑️</button>
+                        </div>
+                    </div>`;
+                }
+            });
+
+            let totalEur = (totalTry / eurToTryRate).toFixed(0);
+            html += `<div style="text-align:right; margin-top:15px; font-size:1.3rem; font-weight:900; color:#2d3436; border-top:2px solid #eee; padding-top:10px;">🛒 Toplam Harcanan: <span style="color:#ff4757;">${totalTry.toLocaleString()} ₺</span> <span style="font-size:1rem; color:#636e72;">(${totalEur}€)</span></div>`;
+            container.innerHTML = html;
+        }
+
+        // FİKİRLER VE İLHAM HAVUZU
+        function addCustomRoutePlan() {
+            let val = document.getElementById('vacCustomInput').value.trim();
+            if(!val) return;
+            appState.routePlans.push({ id: 'c_'+Date.now(), text: val, addedBy: currentUser });
+            document.getElementById('vacCustomInput').value = "";
+            saveToServer(); renderRoutePlansAndPool();
+        }
+
+        function renderRoutePlansAndPool() {
+            const activeContainer = document.getElementById('routeActiveList');
+            activeContainer.innerHTML = "";
+            appState.routePlans.forEach((rp, i) => {
+                let addedText = rp.addedBy === currentUser ? "Sen" : rp.addedBy;
+                activeContainer.innerHTML += `<div class="vac-active-item">
+                    <div>
+                        <span style="display:block;">✨ ${rp.text}</span>
+                        <span style="font-size:0.7rem; color:#a29bfe; font-weight:bold;">Ekleyen: ${addedText}</span>
+                    </div>
+                    <button style="background:transparent; border:none; cursor:pointer;" onclick="openDeleteModal('plan', ${i})">❌</button>
+                </div>`;
+            });
+
+            const poolContainer = document.getElementById('examplesPool');
+            poolContainer.innerHTML = "";
+            let visiblePool = allExamples.filter(ex => !appState.routePlans.some(rp => rp.id === ex.id) && !appState.deletedExamples.includes(ex.id));
+            
+            visiblePool.forEach(ex => {
+                poolContainer.innerHTML += `<div class="example-item">
+                    <span style="font-size:0.85rem; padding-right:10px;">${ex.text}</span>
+                    <div style="display:flex; gap:5px; flex-shrink:0;">
+                        <button style="border:none; background:#ffeaa7; color:#d35400; font-size:0.75rem; padding:3px 8px; border-radius:8px; cursor:pointer;" onclick="deleteExampleFromPool('${ex.id}')">Kalıcı Sil</button>
+                        <button style="border:none; background:#55efc4; color:#00b894; font-size:0.75rem; padding:3px 8px; border-radius:8px; cursor:pointer;" onclick="addExampleToPlan('${ex.id}')">Ekle</button>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function addExampleToPlan(exId) {
+            let ex = allExamples.find(e => e.id === exId);
+            if(ex) { appState.routePlans.push({ id: ex.id, text: ex.text, addedBy: currentUser }); saveToServer(); renderRoutePlansAndPool(); }
+        }
+        function deleteExampleFromPool(exId) {
+            appState.deletedExamples.push(exId); saveToServer(); renderRoutePlansAndPool();
+        }
+
+        // VALİZ VE AŞK NOTLARI
+        function addLuggageItem(user) {
+            let inp = document.getElementById(`${user}ItemInput`);
+            if(!inp.value.trim()) return;
+            appState.luggage[user].push({ id: Date.now(), text: inp.value.trim() });
+            inp.value = ""; saveToServer(); renderLuggageLists();
+        }
+        function renderLuggageLists() {
+            ['sude', 'sahin'].forEach(user => {
+                const c = document.getElementById(`${user}LuggageList`); c.innerHTML = "";
+                appState.luggage[user].forEach((item, i) => {
+                    c.innerHTML += `<div class="vac-active-item">
+                        <span>${item.text}</span>
+                        <button style="background:transparent; border:none; cursor:pointer;" onclick="openDeleteModal('luggage-${user}', ${i})">🗑️</button>
+                    </div>`;
+                });
+            });
+        }
+
+        function addLoveNote() {
+            let inp = document.getElementById('loveNoteInput');
+            if(!inp.value.trim()) return;
+            appState.loveNotes.unshift({ text: inp.value.trim(), by: currentUser });
+            inp.value = ""; saveToServer(); renderLoveNotes();
+        }
+        function renderLoveNotes() {
+            const c = document.getElementById('loveNotesContainer'); c.innerHTML = "";
+            appState.loveNotes.forEach((note, i) => {
+                c.innerHTML += `<div class="food-card" style="background:#fff9e6; border-color:#f1c40f;">
+                    <p style="font-weight:700; color:#2d3436;">${note.text}</p>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                        <span style="font-size:0.75rem; color:#d35400; font-weight:bold;">Yazan: ${note.by} 💝</span>
+                        <button style="background:transparent; border:none; cursor:pointer;" onclick="openDeleteModal('note', ${i})">❌</button>
+                    </div>
+                </div>`;
+            });
+        }
+
+        // MODAL SİLME SİSTEMİ
+        let delTarget = null, delIdx = null;
+        function openDeleteModal(target, idx) {
+            delTarget = target; delIdx = idx;
+            document.getElementById('sweetDeleteModal').style.display = "flex";
+            setTimeout(() => document.getElementById('sweetModalBox').classList.add('show'), 10);
+        }
+        function closeDeleteModal() {
+            document.getElementById('sweetModalBox').classList.remove('show');
+            setTimeout(() => document.getElementById('sweetDeleteModal').style.display = "none", 250);
+        }
+        document.getElementById('confirmDeleteBtn').onclick = function() {
+            if(delTarget === 'plan') appState.routePlans.splice(delIdx, 1);
+            else if(delTarget === 'luggage-sude') appState.luggage.sude.splice(delIdx, 1);
+            else if(delTarget === 'luggage-sahin') appState.luggage.sahin.splice(delIdx, 1);
+            else if(delTarget === 'note') appState.loveNotes.splice(delIdx, 1);
+            saveToServer(); renderAllData(); closeDeleteModal();
+        };
+
+        // ENTEGRE YENİLEME MOTORU
+        function renderAllData() {
+            document.getElementById('vacCity').value = appState.vacationSettings.city;
+            document.getElementById('vacDuration').value = appState.vacationSettings.duration;
+            document.getElementById('vacBudget').value = appState.vacationSettings.budget;
+            document.getElementById('vacCurrency').value = appState.vacationSettings.currency;
+            if(map) currentMarker.setLatLng([appState.vacationSettings.lat, appState.vacationSettings.lng]);
+
+            calculateFinancials();
+            renderHotels();
+            renderGourmetFoodGallery();
+            renderEntertainmentGallery();
+            renderSelectedFoodsTab();
+            renderRoutePlansAndPool();
+            renderLuggageLists();
+            renderLoveNotes();
+        }
+
+        // NETWORK ALTYAPISI VE VERİ SENKRONU
+        async function fetchExchangeRate() {
+            try { 
+                const r = await fetch('https://open.er-api.com/v6/latest/EUR'); 
+                const d = await r.json(); 
+                if(d?.rates?.TRY) { eurToTryRate = d.rates.TRY; renderAllData(); } 
+            } catch(e) {}
+        }
+
+        async function saveToServer() { 
+            try { await fetch(`${API_URL}/save`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ projectData: appState }) }); } catch(err) {} 
+        }
+        
+        async function loadFromServer() {
+            try {
+                const res = await fetch(`${API_URL}/load`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.projectData) {
+                        appState = {
+                            vacationSettings: data.projectData.vacationSettings || appState.vacationSettings,
+                            routePlans: data.projectData.routePlans || [],
+                            deletedExamples: data.projectData.deletedExamples || [],
+                            selectedFoods: data.projectData.selectedFoods || [],
+                            selectedActivities: data.projectData.selectedActivities || [],
+                            bookedHotel: data.projectData.bookedHotel || null,
+                            luggage: data.projectData.luggage || {sude:[], sahin:[]},
+                            loveNotes: data.projectData.loveNotes || []
+                        };
+                    }
+                    renderAllData(); 
+                }
+            } catch (err) {}
+        }
+
+        window.onload = () => {
+            initMapSystem();
+            fetchExchangeRate();
+            loadFromServer().then(() => { setInterval(loadFromServer, 2000); });
+        };
+    </script>
+</body>
+</html>
